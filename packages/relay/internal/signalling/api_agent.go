@@ -87,21 +87,14 @@ func segmentFileName(index int) string {
 
 var proctoringLocks sync.Map
 
-var proctoringUploadWriters = sync.Pool{
-	New: func() any { return bufio.NewWriterSize(io.Discard, 64*1024) },
-}
-
 type writerOnly struct{ io.Writer }
 
 func copyProctoringUpload(dst io.Writer, src io.Reader) (int64, error) {
-	w := proctoringUploadWriters.Get().(*bufio.Writer)
-	w.Reset(writerOnly{dst})
+	w := bufio.NewWriterSize(writerOnly{dst}, 64*1024)
 	n, err := io.Copy(w, src)
 	if err == nil {
 		err = w.Flush()
 	}
-	w.Reset(io.Discard)
-	proctoringUploadWriters.Put(w)
 	return n, err
 }
 
